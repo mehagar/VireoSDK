@@ -55,5 +55,6 @@ deploy:
     secure: Asuu2xJwFoy8ML6DIsZf2mqlgdO2b1dQRCJALbYpUFNP/3DjuhBPDcWiSxTK6iw/
   artifact: '%ESH_i686_DEBUG%'
   force_update: true
+  tag: $(APPVEYOR_REPO_TAG_NAME)
   on:
     appveyor_repo_tag: true
