@@ -21,7 +21,7 @@ install:
   - ps: emsdk\emsdk install sdk-1.37.36-64bit
   - ps: emsdk\emsdk activate sdk-1.37.36-64bit
   - ps: $env:package_version = (Get-Content -Raw -Path package.json | ConvertFrom-Json).version
-  - ps: Update-AppveyorBuild -Version "$env:package_version-$env:APPVEYOR_BUILD_NUMBERtest"
+  - ps: Update-AppveyorBuild -Version "$env:package_version-$env:APPVEYOR_BUILD_NUMBER"
 platform:
   - Win32
 configuration:
@@ -35,7 +35,7 @@ build:
   project: Vireo_VS/VireoCommandLine.sln
 after_build:
   - cmd /c make-it\appveyor-support\setup-env-and-make-vjs.bat
-  - nuget pack VireoSDK.nuspec
+  - ps: nuget pack VireoSDK.nuspec -properties version="$env:package_version-$env:APPVEYOR_BUILD_NUMBER"
 test_script:
   - make testjs
   - make testnative
