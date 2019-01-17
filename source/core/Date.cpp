@@ -7,7 +7,7 @@ This software is subject to the terms described in the LICENSE.TXT file
 SDG
 */
 
-/*! \file Date implementation file
+/*! \file Date.h implementation file
  */
 
 #include "BuildConfig.h"

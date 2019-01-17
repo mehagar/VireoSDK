@@ -7,7 +7,7 @@ This software is subject to the terms described in the LICENSE.TXT file
 SDG
 */
 
-/*! \file Timestamp implementation file
+/*! \file Timestamp.h implementation file
  */
 
 #include "BuildConfig.h"

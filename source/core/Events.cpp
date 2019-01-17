@@ -153,7 +153,7 @@ class EventQueueObject {
 
  private:
     bool DiscardTopEvent() {
-        if (_eventQueue.size() > 0) {
+        if (!_eventQueue.empty()) {
             EventData &eventData = _eventQueue.front();
             eventData.Destroy();
             _eventQueue.pop_front();
@@ -466,9 +466,9 @@ class DynamicEventRegInfo {
     }
 
     ~DynamicEventRegInfo() {
-         for (size_t i = 0; i < _entry.size(); i++) {
+         for (auto& entry : _entry)
+         {
              // Free any allocated polymorphic event reg. data
-             DynamicEventRegEntry &entry = _entry[i];
              if ((entry.regFlags & kEventRegFlagsPolyData)) {
                  entry.refPolyType->ClearData(entry.refDataEntry);
                  THREAD_TADM()->Free(entry.refDataEntry);

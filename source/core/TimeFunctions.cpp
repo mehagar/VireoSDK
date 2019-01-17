@@ -7,7 +7,7 @@ This software is subject to the terms described in the LICENSE.TXT file
 SDG
 */
 
-/*! \file Time and date related functions for Vireo
+/*! \file Time.h and date related functions for Vireo
  */
 
 #include "TypeDefiner.h"

@@ -2654,12 +2654,13 @@ void ScanSpreadsheet(StringRef inputString, StringRef formatString, TypedArrayCo
 {
     SubString format = formatString->MakeSubStringAlias();
     SubString input = inputString->MakeSubStringAlias();
-    ArrayDimensionVector  dimensionLength;
+    ArrayDimensionVector dimensionLengths;
     IntIndex rank = array->Rank();
     Boolean formatIsString = format.CompareCStr("%s");
     SubString line;
-    for (IntIndex i = 0; i < kArrayMaxRank; i++) {
-        dimensionLength[i] = 0;
+    for (int& i : dimensionLengths)
+    {
+        i = 0;
     }
 
     if (rank == 1) {
@@ -2669,8 +2670,8 @@ void ScanSpreadsheet(StringRef inputString, StringRef formatString, TypedArrayCo
         while (FindDelimiter(&input, delimiterParam, split, &split, isDelimArray) > -1) {
             rowlen++;
         }
-        if (rowlen > dimensionLength[0]) {
-            dimensionLength[0] = rowlen;
+        if (rowlen > dimensionLengths[0]) {
+            dimensionLengths[0] = rowlen;
         }
     } else if (rank == 2) {
         Int32 lineIndex = 0;
@@ -2685,11 +2686,11 @@ void ScanSpreadsheet(StringRef inputString, StringRef formatString, TypedArrayCo
             while (FindDelimiter(&line, delimiterParam, split, &split, isDelimArray) > -1) {
                 rowlen++;
             }
-            if (rowlen > dimensionLength[0]) {
-                dimensionLength[0] = rowlen;
+            if (rowlen > dimensionLengths[0]) {
+                dimensionLengths[0] = rowlen;
             }
         }
-        dimensionLength[1] = lineIndex;
+        dimensionLengths[1] = lineIndex;
 
     } else {
         Int32 lineIndex = 0;
@@ -2706,8 +2707,8 @@ void ScanSpreadsheet(StringRef inputString, StringRef formatString, TypedArrayCo
                 while (line.ReadInt(&intValue)) {
                     line.EatRawChars(1);
                     dimensionL = (IntIndex)intValue;
-                    if (dimensionLength[rank-1-d] < dimensionL+1) {
-                        dimensionLength[rank-1-d] = dimensionL+1;
+                    if (dimensionLengths[rank-1-d] < dimensionL+1) {
+                        dimensionLengths[rank-1-d] = dimensionL+1;
                     }
                     d++;
                 }
@@ -2717,51 +2718,51 @@ void ScanSpreadsheet(StringRef inputString, StringRef formatString, TypedArrayCo
                 while (FindDelimiter(&line, delimiterParam, split, &split, isDelimArray) > -1) {
                     rowlen++;
                 }
-                if (rowlen > dimensionLength[0]) {
-                    dimensionLength[0] = rowlen;
+                if (rowlen > dimensionLengths[0]) {
+                    dimensionLengths[0] = rowlen;
                 }
-                if (lineIndex > dimensionLength[1]) {
-                    dimensionLength[1] = lineIndex;
+                if (lineIndex > dimensionLengths[1]) {
+                    dimensionLengths[1] = lineIndex;
                 }
             }
             lineIndex++;
         }
         // make sure all the dimension length is positive
         for (IntIndex i = 0; i < rank; i++) {
-            if (dimensionLength[i] <= 0) {
-                dimensionLength[i] = 1;
+            if (dimensionLengths[i] <= 0) {
+                dimensionLengths[i] = 1;
             }
         }
         // resize the dimension and then fill the data
     }
-    array->ResizeDimensions(rank, dimensionLength, false);
+    array->ResizeDimensions(rank, dimensionLengths, false);
     input = inputString->MakeSubStringAlias();
 
-    ArrayDimensionVector elemIndex;
+    ArrayDimensionVector elemIndices;
     TypeRef elementType = array->ElementType();
-    StaticTypeAndData Value = { elementType, array->BeginAtND(rank, elemIndex)};
+    StaticTypeAndData Value = { elementType, array->BeginAtND(rank, elemIndices)};
     if (rank == 1) {
         IntIndex split = 0;
-        elemIndex[0] = 0;
+        elemIndices[0] = 0;
 
         SubString elemString;
         IntIndex pastDelim = 0, next = 0;
         while ((next = FindDelimiter(&input, delimiterParam, split, &pastDelim, isDelimArray)) > -1) {
             elemString.AliasAssign(input.Begin()+split, input.Begin()+next);
-            Value._pData = array->BeginAtND(rank, elemIndex);
+            Value._pData = array->BeginAtND(rank, elemIndices);
             FormatScanForSpreadsheet(&elemString, &format, &Value, formatIsString);
             split = pastDelim;
-            elemIndex[0]++;
+            elemIndices[0]++;
         }
         if (split > 0) {
             elemString.AliasAssign(input.Begin()+split, input.End());
             if (elemString.Length() > 0) {
-                Value._pData = array->BeginAtND(rank, elemIndex);
+                Value._pData = array->BeginAtND(rank, elemIndices);
                 FormatScanForSpreadsheet(&elemString, &format, &Value, formatIsString);
             }
         }
     } else if (rank == 2) {
-        elemIndex[0] = elemIndex[1] = 0;
+        elemIndices[0] = elemIndices[1] = 0;
         IntIndex lineIndex = 0;
         while (input.ReadLine(&line)) {
             if (line.Length() == 0) {
@@ -2771,39 +2772,40 @@ void ScanSpreadsheet(StringRef inputString, StringRef formatString, TypedArrayCo
             IntIndex split = 0;
             IntIndex pastDelim = 0, next = 0;
             SubString elemString;
-            elemIndex[0] = 0;
-            elemIndex[1] = lineIndex;
+            elemIndices[0] = 0;
+            elemIndices[1] = lineIndex;
             while ((next = FindDelimiter(&line, delimiterParam, split, &pastDelim, isDelimArray)) > -1) {
                 elemString.AliasAssign(line.Begin()+split, line.Begin()+next);
-                Value._pData = array->BeginAtND(rank, elemIndex);
+                Value._pData = array->BeginAtND(rank, elemIndices);
                 FormatScanForSpreadsheet(&elemString, &format, &Value, formatIsString);
                 split = pastDelim;
-                elemIndex[0]++;
+                elemIndices[0]++;
             }
             if (split > 0) {
                 line.AliasAssign(line.Begin()+split, line.End());
                 if (line.Length() > 0) {
-                    Value._pData = array->BeginAtND(rank, elemIndex);
+                    Value._pData = array->BeginAtND(rank, elemIndices);
                     FormatScanForSpreadsheet(&line, &format, &Value, formatIsString);
                 }
             }
             lineIndex++;
         }
     } else {
-        for (IntIndex i = 0; i < kArrayMaxRank; i++) {
-            elemIndex[i] = 0;
+        for (int& i : elemIndices)
+        {
+            i = 0;
         }
         IntIndex lineIndex = 0;
         IntIndex dim = 2;
         while (input.ReadLine(&line)) {
             if (line.Length() == 0) {
                 lineIndex = 0;
-                elemIndex[dim]++;
-                if (elemIndex[dim] >= array->GetLength(dim)) {
+                elemIndices[dim]++;
+                if (elemIndices[dim] >= array->GetLength(dim)) {
                     dim++;
-                    elemIndex[dim] = 1;
+                    elemIndices[dim] = 1;
                     for (IntIndex i = 0; i < dim; i++) {
-                        elemIndex[i] = 0;
+                        elemIndices[i] = 0;
                     }
                 }
                 continue;
@@ -2814,19 +2816,19 @@ void ScanSpreadsheet(StringRef inputString, StringRef formatString, TypedArrayCo
                 IntIndex split = 0;
                 IntIndex pastDelim = 0, next = 0;
                 SubString elemString;
-                elemIndex[0] = 0;
-                elemIndex[1] = lineIndex -1;  // because the fist line is not for array data.
+                elemIndices[0] = 0;
+                elemIndices[1] = lineIndex -1;  // because the fist line is not for array data.
                 while ((next = FindDelimiter(&line, delimiterParam, split, &pastDelim, isDelimArray)) > -1) {
                     elemString.AliasAssign(line.Begin()+split, line.Begin()+next);
-                    Value._pData = array->BeginAtND(rank, elemIndex);
+                    Value._pData = array->BeginAtND(rank, elemIndices);
                     FormatScanForSpreadsheet(&elemString, &format, &Value, formatIsString);
                     split = pastDelim;
-                    elemIndex[0]++;
+                    elemIndices[0]++;
                 }
                 if (split > 0) {
                     line.AliasAssign(line.Begin()+split, line.End());
                     if (line.Length() > 0) {
-                        Value._pData = array->BeginAtND(rank, elemIndex);
+                        Value._pData = array->BeginAtND(rank, elemIndices);
                         FormatScanForSpreadsheet(&line, &format, &Value, formatIsString);
                     }
                 }
